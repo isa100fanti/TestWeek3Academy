@@ -129,7 +129,7 @@ from Ingrediente as i
 where i.codice = 11
 
 --n ingredienti in una pizza (codicepizza)
-create function NingredientiPizza(@codicepizza int)
+create function NingredientiPizza1(@codicepizza int)
 returns int
 as
 begin
@@ -138,19 +138,33 @@ SELECT @result = count(*)
 from pizza as p
 join Ingrediente as i
 on i.codicepizza = p.codice
-where i.codicepizza = p.codice and p.nome
-in(
-select p.nome
-from pizza as p
-inner join Ingrediente as i
-on i.codicepizza = p.codice
-where @codicepizza = p.codice)
+where i.codicepizza = p.codice
+group by p.nome
 return @result
 
 end
 
-select dbo.NingredientiPizza(123) as nIngredienti,p.nome
+--select count(*) as ningredienti
+--from pizza as p
+--join Ingrediente as i
+--on i.codicepizza = p.codice
+--where i.codicepizza = p.codice
+--group by p.nome
+
+
+select dbo.NingredientiPizza1(124) as nIngredienti,p.nome
 from pizza as p
+
+create view [menuconpizze] as(
+select distinct p.nome as pizza,i.nome as ingrediente,p.prezzo
+from pizza as p
+join Ingrediente as i
+on i.codicepizza = p.codice
+
+)
+
+select*from menuconpizze
+
 
 
 

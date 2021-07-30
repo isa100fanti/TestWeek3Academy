@@ -42,7 +42,138 @@ insert into Ingrediente values('patate',1,10,130),('salsiccia',1.5,10,130)
 insert into Ingrediente values('pomodorini',1,10,131),('ricotta',1.5,10,131)
 
 
+-----------------FUNCTION-----------------------------
+
+--tabella listino pizze ordine alfabetico
+create function ListinoPizze ()
+returns table
+as
+return
+select p.nome,p.prezzo
+from pizza as p
+
+select*from dbo.ListinoPizze()
+
+--listino pizze con un ingrediente
+create function ListinoPizzeConUnIngrediente(@codiceingr int)
+returns table
+as
+return
+select p.nome as pizza,p.prezzo,i.nome as ingredienteScelto
+from pizza as p
+inner join Ingrediente as i
+on i.codicepizza = p.codice
+where i.nome =
+ALL
+(
+select i.nome
+from pizza as p
+inner join Ingrediente as i
+on i.codicepizza = p.codice
+where i.codice = @codiceingr
+group by i.nome)
+
+select*from dbo.ListinoPizzeConUnIngrediente(4)
+
+--n pizze con un ingrediente
+create function NPizzeConUnIngrediente(@codiceingr int)
+returns INT
+as
+begin
+DECLARE @result int
+SELECT @result = count(*)
+from pizza as p
+inner join Ingrediente as i
+on i.codicepizza = p.codice
+where i.nome =
+ALL
+(
+select i.nome
+from pizza as p
+inner join Ingrediente as i
+on i.codicepizza = p.codice
+where i.codice = @codiceingr
+group by i.nome)
+return @result
+end
+
+select dbo.NPizzeConUnIngrediente(6) as nPizze,i.nome
+from Ingrediente as i
+where i.codice = 6
+
+--n pizze senza ingrediente
+create function NPizzeNOIngrediente(@codiceingr int)
+returns INT
+as
+begin
+DECLARE @result int
+SELECT @result = count(*)
+from pizza as p
+inner join Ingrediente as i
+on i.codicepizza = p.codice
+where i.nome <>
+ALL
+(
+select distinct i.nome
+from pizza as p
+inner join Ingrediente as i
+on i.codicepizza = p.codice
+where i.codice = @codiceingr
+group by i.nome)
+return @result
+end
+
+select*from Ingrediente
+
+select dbo.NPizzeNOIngrediente(11)as nPizze,i.nome as 'ingrediente non presente'
+from Ingrediente as i
+where i.codice = 11
+
+
+
+
+
+-----------------------PROCEDURE------------------------------
+
+--elimina ingrediente: sarebbe
+delete from Ingrediente where codice= 1 and codicepizza = 3
+
+
+create procedure EliminaIngrediente @codicepizza int,@codiceingr int
+
+as
+begin
+	begin try
+	
+	
+		delete from Ingrediente where codice = @codiceingr and codicepizza
+		in( --devo recuperare idpizza da ingr
+		select i.codicepizza
+		from Ingrediente as i
+		join pizza as p
+		on @codicepizza = i.codicepizza  
+		
+		)
+	end try
+	begin catch
+	select ERROR_LINE(),ERROR_MESSAGE()
+	end catch
+end
+
+exec EliminaIngrediente @codicepizza= 133,@codiceingr = 7
+
+
+
+
+
+
+---???
 --procedure nuova pizza
+--SAREBBE
+insert into pizza values(140,'napoli',7,2)
+
+
+
 create procedure inserisciPizza(@nome varchar(20),@prezzo decimal)
 as
 begin
@@ -51,22 +182,39 @@ begin
    declare @codicepizza int
    select @codicepizza = p.codice
    from pizza as p
-   where p.nome = @nome
+   where p.nome = @nome and p.prezzo = @prezzo
    select @ningredienti = p.ningredienti
    from pizza as p
-   where p.nome = @nome
-   insert into pizza (codice,nome,prezzo,ningredienti) values(@nome,@prezzo,@ningredienti,@codicepizza)
+   where p.nome = @nome and p.prezzo = @prezzo
+   insert into pizza values(@codicepizza,@nome,@prezzo,@ningredienti)
 
    end try
    begin catch
    select ERROR_LINE(),ERROR_MESSAGE(),ERROR_SEVERITY()
    end catch
 end
-exec inserisciPizza @nome = 'napoli',@prezzo = 6 --@codicepizza = 135,
-select*from pizza
 
 
-
+--aggiungi ingrediente
+create procedure InserisciIngrediente(@codicepizza int,@codiceingr int)
+as
+begin
+    begin try
+	
+	declare @nomeingr varchar(20)
+	declare @prezzoingr decimal
+	declare @scorte int
+	select @codiceingr = i.codice
+	from Ingrediente as i
+	where i.nome = @nomeingr and i.costo = @prezzoingr and i.scortemagazzino = @scorte
+	insert into Ingrediente values(@nomeingr,@prezzoingr,@scorte,@codicepizza)
+	end try
+	begin catch
+	select ERROR_LINE(),ERROR_MESSAGE(),ERROR_SEVERITY()
+	end catch
+end
+select*from Ingrediente
+exec InserisciIngrediente @codicepizza = 132, @codiceingr = 17
 
 
 

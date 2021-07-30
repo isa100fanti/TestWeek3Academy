@@ -109,17 +109,16 @@ begin
 DECLARE @result int
 SELECT @result = count(*)
 from pizza as p
-inner join Ingrediente as i
-on i.codicepizza = p.codice
-where i.nome <>
-ALL
+--inner join Ingrediente as i
+--on i.codicepizza = p.codice
+where p.nome 
+not in
 (
-select distinct i.nome
+select i.nome
 from pizza as p
 inner join Ingrediente as i
 on i.codicepizza = p.codice
-where i.codice = @codiceingr
-group by i.nome)
+where i.codice = @codiceingr)
 return @result
 end
 
@@ -128,6 +127,30 @@ select*from Ingrediente
 select dbo.NPizzeNOIngrediente(11)as nPizze,i.nome as 'ingrediente non presente'
 from Ingrediente as i
 where i.codice = 11
+
+--n ingredienti in una pizza (codicepizza)
+create function NingredientiPizza(@codicepizza int)
+returns int
+as
+begin
+DECLARE @result int
+SELECT @result = count(*)
+from pizza as p
+join Ingrediente as i
+on i.codicepizza = p.codice
+where i.codicepizza = p.codice and p.nome
+in(
+select p.nome
+from pizza as p
+inner join Ingrediente as i
+on i.codicepizza = p.codice
+where @codicepizza = p.codice)
+return @result
+
+end
+
+select dbo.NingredientiPizza(123) as nIngredienti,p.nome
+from pizza as p
 
 
 
